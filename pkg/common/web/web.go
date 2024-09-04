@@ -24,8 +24,8 @@ func (w *Web) Start(hndlr models.Handler, errCh chan error) {
 	//gin.SetMode(gin.ReleaseMode)
 
 	router.GET("/rent/calculate/:count", hndlr.CostCalculation) //рассчитать стоимость
-	router.PUT("/rent", hndlr.NewRent)                          //создать аренду
-	router.GET("/rent/check/:car", hndlr.Check)                 //проверить доступность
+	router.POST("/rent", hndlr.NewRent)                         //создать аренду
+	router.PUT("/rent/check", hndlr.Check)                      //проверить доступность | PUT не подходит, но без этого не читает JSON
 	router.GET("/rent/report", hndlr.Report)                    //отчет
 
 	w.server = &http.Server{Addr: w.connURL, Handler: router.Handler()}

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"car_rent/pkg/common/cache"
 	"car_rent/pkg/common/config"
 	"car_rent/pkg/common/db"
 	"car_rent/pkg/common/service"
@@ -28,8 +27,6 @@ func main() {
 
 	webSrv := web.New(cfg.Web.ConnectionURL())
 
-	mem := cache.New()
-
 	dbConnURL, err := cfg.Postgres.ConnectionURL()
 	if err != nil {
 		slog.Error("Prepare DB connection URL", err.Error())
@@ -38,7 +35,7 @@ func main() {
 
 	dbConn := db.New(dbConnURL, time.Duration(cfg.Postgres.ConnTimeout)*time.Second)
 
-	srv := service.New(ctx, mem, dbConn, cfg.Service.BaseCost, cfg.Service.Interval, cfg.Service.MaxRentPeriod)
+	srv := service.New(ctx, dbConn, cfg.Service.BaseCost, cfg.Service.Interval, cfg.Service.MaxRentPeriod)
 
 	errCh := make(chan error)
 	defer close(errCh)

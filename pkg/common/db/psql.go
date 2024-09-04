@@ -13,6 +13,12 @@ type PSQL struct {
 	pool    *pgxpool.Pool
 }
 
+type Rent struct {
+	CarNum string
+	Start  time.Time
+	Stop   time.Time
+}
+
 func New(url string, timeout time.Duration) *PSQL {
 	return &PSQL{timeout: timeout, url: url}
 }
@@ -27,35 +33,42 @@ func (p *PSQL) Start(ctx context.Context, errCh chan error) {
 	}
 
 	p.pool = pool
-
-	err = p.createTable(ctx)
-	if err != nil {
-		errCh <- err
-	}
 }
 
 func (p *PSQL) Stop() {
 	p.pool.Close()
 }
 
-func (p *PSQL) createTable(ctx context.Context) error {
-	//ctxTimeout, cancel := context.WithTimeout(ctx, p.timeout)
-	//defer cancel()
-
-	//if _, err := p.pool.Exec(ctx, "create table if not exists orders(order_id varchar(20) unique not null,data json)"); err != nil {
-	//	return fmt.Errorf("Create table", err)
-	//}
-	fmt.Println("СОздание таблицы")
-	return nil
-}
-
-func (p *PSQL) CarIsFree(ctx context.Context, carNum string) (bool, error) {
+func (p *PSQL) CarIsFree(ctx context.Context, rent Rent, serviceDays int) (bool, error) {
 	ctxTimeout, cancel := context.WithTimeout(ctx, p.timeout)
 	defer cancel()
 
-	row := p.pool.QueryRow(ctxTimeout, "select status from car_park where gos_num=$1", carNum)
+	sql := fmt.Sprintf("select count(*) from rent where gos_num = '%s' and ('%s' between \"start\"- %d and stop + %d or '%s' between \"start\" - %d and stop + %d);",
+		rent.CarNum,
+		rent.Start.Format(time.DateOnly),
+		serviceDays, serviceDays,
+		rent.Stop.Format(time.DateOnly),
+		serviceDays, serviceDays)
 
-	var status bool
-	err := row.Scan(&status)
-	return status, err
+	row := p.pool.QueryRow(ctxTimeout, sql)
+
+	var count int
+	err := row.Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	if count == 0 {
+		return true, nil
+	} else {
+		return false, nil
+	}
+}
+
+func (p *PSQL) NewRent(ctx context.Context, rent Rent, cost float64) error {
+	ctxTimeout, cancel := context.WithTimeout(ctx, p.timeout)
+	defer cancel()
+
+	_, err := p.pool.Exec(ctxTimeout, "insert into rent (gos_num, start, stop,cost) values($1,$2,$3,$4)", rent.CarNum, rent.Start, rent.Stop, cost)
+
+	return err
 }
