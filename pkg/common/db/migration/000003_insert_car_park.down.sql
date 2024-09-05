@@ -1,0 +1,1 @@
+delete from car_park where gos_num in ('A111AA111','B222BB222','C333CC333','D444D444','E555EE555');
