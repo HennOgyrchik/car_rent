@@ -19,14 +19,13 @@ func New(url string) *Web {
 }
 
 func (w *Web) Start(hndlr models.Handler, errCh chan error) {
-	defer fmt.Println("WEB START close")
 	router := gin.Default()
 	//gin.SetMode(gin.ReleaseMode)
 
 	router.GET("/rent/calculate/:count", hndlr.CostCalculation) //рассчитать стоимость
 	router.POST("/rent", hndlr.NewRent)                         //создать аренду
 	router.PUT("/rent/check", hndlr.Check)                      //проверить доступность | PUT не подходит, но без этого не читает JSON
-	router.GET("/rent/report", hndlr.Report)                    //отчет
+	router.PUT("/rent/report", hndlr.Report)                    //отчет
 
 	w.server = &http.Server{Addr: w.connURL, Handler: router.Handler()}
 
@@ -37,7 +36,6 @@ func (w *Web) Start(hndlr models.Handler, errCh chan error) {
 }
 
 func (w *Web) Stop() error {
-	defer fmt.Println("WEB STOP")
 	ctxSrv, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 

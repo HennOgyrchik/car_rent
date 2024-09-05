@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v4"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -22,10 +23,10 @@ type Service struct {
 }
 
 var (
-	ErrInvalidFormatDate = fmt.Errorf("Invalid format date")
-	ErrStartLongerStop   = fmt.Errorf("The start date of the lease cannot be longer than the end date")
-	ErrWeekdays          = fmt.Errorf("The beginning and end of the lease can only fall on weekdays (Mon-Fri)")
-	ErrExceedMaxPeriod   = fmt.Errorf("The allowed rental period has been exceeded")
+	ErrInvalidFormatDate = fmt.Errorf("invalid format date")
+	ErrStartLongerStop   = fmt.Errorf("the start date of the lease must be less than the end date")
+	ErrWeekdays          = fmt.Errorf("the beginning and end of the lease can only fall on weekdays (Mon-Fri)")
+	ErrExceedMaxPeriod   = fmt.Errorf("the allowed rental period has been exceeded")
 )
 
 func New(ctx context.Context, db *db.PSQL, baseCost float64, interval int, maxRentPeriod int) *Service {
@@ -105,7 +106,45 @@ func (s *Service) Check(c *gin.Context) {
 	}
 }
 func (s *Service) Report(c *gin.Context) {
+	var rm models.ReportMonth
+	err := c.BindJSON(&rm)
+	if err != nil {
+		sendError(c, http.StatusBadRequest, err)
+		return
+	}
 
+	date, err := parseDate(rm.Date)
+	if err != nil {
+		sendError(c, http.StatusBadRequest, err)
+		return
+	}
+
+	r, err := s.db.Report(s.ctx, date)
+	if err != nil {
+		sendError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	sumPercent := 0.0
+	for _, v := range r {
+		sumPercent += v
+	}
+
+	c.JSON(http.StatusOK, models.Report{
+		ByCar: r,
+		Summary: models.Summary{
+			Cars: len(r),
+			Days: math.Round(sumPercent/float64(len(r))*100) / 100,
+		},
+	})
+}
+
+func parseDate(date string) (time.Time, error) {
+	result, err := time.Parse(time.DateOnly, date)
+	if err != nil {
+		err = ErrInvalidFormatDate
+	}
+	return result, err
 }
 
 func (s *Service) calculate(period int) float64 {
@@ -134,18 +173,16 @@ func sendError(c *gin.Context, httpCode int, err error) {
 }
 
 func periodValidate(start, stop string, maxPeriod int) (startDate time.Time, stopDate time.Time, period int, err error) {
-	startDate, err = time.Parse(time.DateOnly, start)
+	startDate, err = parseDate(start)
 	if err != nil {
-		err = ErrInvalidFormatDate
 		return
 	}
-	stopDate, err = time.Parse(time.DateOnly, stop)
+	stopDate, err = parseDate(stop)
 	if err != nil {
-		err = ErrInvalidFormatDate
 		return
 	}
 
-	if compare := stopDate.Compare(startDate); compare < 1 {
+	if compare := stopDate.Compare(startDate); compare < 0 {
 		err = ErrStartLongerStop
 		return
 	}
@@ -158,7 +195,7 @@ func periodValidate(start, stop string, maxPeriod int) (startDate time.Time, sto
 		return
 	}
 
-	period = int(stopDate.Sub(startDate).Hours() / 24)
+	period = int(stopDate.Sub(startDate).Hours()/24) + 1
 
 	if period > maxPeriod {
 		err = ErrExceedMaxPeriod

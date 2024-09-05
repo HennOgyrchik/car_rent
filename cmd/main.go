@@ -41,7 +41,7 @@ func main() {
 	defer close(errCh)
 
 	srv.Start(errCh)
-	webSrv.Start(srv, errCh)
+	go webSrv.Start(srv, errCh)
 
 	defer func() {
 		srv.Stop()
@@ -49,6 +49,7 @@ func main() {
 			slog.Error("Stop webserver", err)
 			return
 		}
+
 	}()
 
 	select {
@@ -57,5 +58,4 @@ func main() {
 		slog.Error("Start service", err)
 
 	}
-	//надо подождать закрытия подключений
 }

@@ -10,6 +10,21 @@ type RentRequest struct {
 	Stop      string `json:"stop" binding:"required"`
 }
 
+type Report struct {
+	ByCar   ByCar   `json:"by_car"`
+	Summary Summary `json:"summary"`
+}
+
+type ByCar map[string]float64
+type Summary struct {
+	Cars int     `json:"cars"`
+	Days float64 `json:"days"`
+}
+
+type ReportMonth struct {
+	Date string `json:"date" binding:"required"`
+}
+
 type Handler interface {
 	CostCalculation(c *gin.Context)
 	NewRent(c *gin.Context)
