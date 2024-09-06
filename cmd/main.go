@@ -21,7 +21,7 @@ func main() {
 
 	cfg, err := config.Read(ctx)
 	if err != nil {
-		slog.Error("Load configuration", err.Error())
+		slog.Error("Load configuration", "error", err.Error())
 		return
 	}
 
@@ -29,7 +29,7 @@ func main() {
 
 	dbConnURL, err := cfg.Postgres.ConnectionURL()
 	if err != nil {
-		slog.Error("Prepare DB connection URL", err.Error())
+		slog.Error("Prepare DB connection URL", "error", err.Error())
 		return
 	}
 

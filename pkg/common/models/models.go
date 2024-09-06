@@ -17,12 +17,8 @@ type Report struct {
 
 type ByCar map[string]float64
 type Summary struct {
-	Cars int     `json:"cars"`
-	Days float64 `json:"days"`
-}
-
-type ReportMonth struct {
-	Date string `json:"date" binding:"required"`
+	Cars    int     `json:"cars"`
+	Average float64 `json:"average"`
 }
 
 type Handler interface {

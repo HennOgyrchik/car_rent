@@ -30,14 +30,17 @@ func (p *PSQL) Start(ctx context.Context, errCh chan error) {
 
 	pool, err := pgxpool.Connect(ctxTimeout, p.url)
 	if err != nil {
-		errCh <- fmt.Errorf("Create PSQL connect", err)
+		errCh <- fmt.Errorf("Create PSQL connect: %w", err)
+		return
 	}
 
 	p.pool = pool
 }
 
 func (p *PSQL) Stop() {
-	p.pool.Close()
+	if p.pool != nil {
+		p.pool.Close()
+	}
 }
 
 func (p *PSQL) CarIsFree(ctx context.Context, rent Rent, serviceDays int) (bool, error) {

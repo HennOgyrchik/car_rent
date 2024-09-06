@@ -26,7 +26,7 @@ type PostgresConfig struct {
 
 type WebConfig struct {
 	Host string `env:"HOST,default=localhost" json:",omitempty"`
-	Port int    `env:"PORT,default=8080" json:",omitempty"`
+	Port int    `env:"PORT,default=80" json:",omitempty"`
 }
 
 type ServiceConfig struct {

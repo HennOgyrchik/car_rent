@@ -106,14 +106,9 @@ func (s *Service) Check(c *gin.Context) {
 	}
 }
 func (s *Service) Report(c *gin.Context) {
-	var rm models.ReportMonth
-	err := c.BindJSON(&rm)
-	if err != nil {
-		sendError(c, http.StatusBadRequest, err)
-		return
-	}
+	dateString := c.Param("date")
 
-	date, err := parseDate(rm.Date)
+	date, err := parseDate(dateString)
 	if err != nil {
 		sendError(c, http.StatusBadRequest, err)
 		return
@@ -133,8 +128,8 @@ func (s *Service) Report(c *gin.Context) {
 	c.JSON(http.StatusOK, models.Report{
 		ByCar: r,
 		Summary: models.Summary{
-			Cars: len(r),
-			Days: math.Round(sumPercent/float64(len(r))*100) / 100,
+			Cars:    len(r),
+			Average: math.Round(sumPercent/float64(len(r))*100) / 100,
 		},
 	})
 }
